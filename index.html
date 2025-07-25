@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Records Manager</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and general body styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+            color: #333;
+            min-height: 100vh; /* Ensure body takes full viewport height */
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            flex-grow: 1; /* Allow container to grow and push footer down */
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0; /* Tailwind's gray-200 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* Tailwind's gray-400 */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* Tailwind's gray-500 */
+        }
+
+        /* Styles for the sliding toggle switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px; /* Rounded slider */
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%; /* Circular handle */
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3; /* Blue when checked */
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Header Section -->
+    <header class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container flex justify-between items-center">
+            <h1 class="text-3xl font-bold">Medical Records Manager</h1>
+            <nav>
+                <ul class="flex space-x-4">
+                    <li><a href="#" id="navHome" class="hover:text-blue-200 transition-colors font-semibold">Home</a></li>
+                    <li><a href="#" id="navRecords" class="hover:text-blue-200 transition-colors">Records</a></li>
+                    <li><a href="#" id="navDigitalCopy" class="hover:text-blue-200 transition-colors">Digital Copy</a></li>
+                    <li><a href="#" id="navSettings" class="hover:text-blue-200 transition-colors">Settings</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="container py-8">
+        <!-- Home Page Content (Upload Section) -->
+        <div id="homePage" class="page-content">
+            <section class="bg-white p-6 rounded-lg shadow-lg mb-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Upload New Medical Record</h2>
+                <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4 mb-4">
+                    <input type="file" id="fileInput" class="hidden" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                    <label for="fileInput" class="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105">
+                        Choose Files
+                    </label>
+                    <span id="selectedFileName" class="text-gray-600 italic">No files chosen</span>
+                </div>
+                <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+                    <div class="flex flex-col flex-grow">
+                        <label for="categorySelect" class="text-gray-700 font-medium mb-1">Category:</label>
+                        <select id="categorySelect" class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm w-full">
+                            <option value="Uncategorized">Uncategorized</option>
+                            <option value="Lab Results">Lab Results</option>
+                            <option value="Prescriptions">Prescriptions</option>
+                            <option value="Consultation Notes">Consultation Notes</option>
+                            <option value="Imaging">Imaging (X-Ray, MRI)</option>
+                            <option value="Vaccination Records">Vaccination Records</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <button id="uploadButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105 md:mt-6">
+                        Upload Record
+                    </button>
+                </div>
+                <div id="uploadMessage" class="mt-4 text-sm text-center text-green-700 font-medium hidden"></div>
+                <div id="uploadLoading" class="mt-4 text-center text-blue-600 font-semibold hidden">
+                    Processing file... Please wait. This may take a moment for OCR and AI classification.
+                </div>
+            </section>
+        </div>
+
+        <!-- Records Page Content -->
+        <div id="recordsPage" class="page-content hidden">
+            <section class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Your Medical Records</h2>
+                <div class="mb-6 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <input type="text" id="searchBar" placeholder="Search records by name..." class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                    <button id="clearSearchButton" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-6 rounded-full shadow-md transition-all duration-300 ease-in-out transform hover:scale-105">
+                        Clear Search
+                    </button>
+                </div>
+
+                <!-- Record Counts Display -->
+                <div id="recordCounts" class="flex flex-wrap justify-center sm:justify-start gap-4 mb-6 text-gray-700 font-medium">
+                    <p>Total Files: <span id="totalFilesCount" class="font-bold text-blue-600">0</span></p>
+                    <p>Digital Copies: <span id="digitalCopiesCount" class="font-bold text-purple-600">0</span></p>
+                </div>
+
+                <div id="recordsList" class="space-y-6">
+                    <!-- Records will be dynamically loaded here, grouped by category -->
+                    <p class="text-gray-500 text-center" id="noRecordsMessage">No records found. Upload some to get started!</p>
+                </div>
+            </section>
+        </div>
+
+        <!-- Digital Copy Page Content -->
+        <div id="digitalCopyPage" class="page-content hidden">
+            <section class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Your Digital Copies</h2>
+                <div class="mb-6 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <input type="text" id="digitalCopySearchBar" placeholder="Search digital copies..." class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                    <button id="clearDigitalCopySearchButton" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-6 rounded-full shadow-md transition-all duration-300 ease-in-out transform hover:scale-105">
+                        Clear Search
+                    </button>
+                </div>
+                <div id="digitalCopyList" class="space-y-6">
+                    <!-- Digital copies will be dynamically loaded here -->
+                    <p class="text-gray-500 text-center" id="noDigitalCopiesMessage">No digital copies found. Upload some records to see them here!</p>
+                </div>
+            </section>
+        </div>
+
+        <!-- Settings Page Content (now includes Profile) -->
+        <div id="settingsPage" class="page-content hidden">
+            <section class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Settings</h2>
+
+                <div class="space-y-8">
+                    <!-- User Profile Section -->
+                    <div class="border-b pb-6 border-gray-200">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">User Profile</h3>
+                        <div class="flex flex-col items-center space-y-6">
+                            <div class="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-6xl font-bold overflow-hidden border-4 border-blue-300 shadow-md">
+                                <img id="profilePicture" src="https://placehold.co/128x128/cbd5e1/475569?text=JD" alt="Profile Picture" class="w-full h-full object-cover">
+                            </div>
+                            <div class="text-center">
+                                <p class="text-xl font-bold text-gray-800" id="profileName">John Doe</p>
+                                <p class="text-md text-gray-600" id="profileEmail">john.doe@example.com</p>
+                            </div>
+                            <div class="w-full max-w-md space-y-4">
+                                <div class="flex flex-col">
+                                    <label for="editName" class="text-gray-700 font-medium mb-1">Name:</label>
+                                    <input type="text" id="editName" value="John Doe" class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                                </div>
+                                <div class="flex flex-col">
+                                    <label for="editEmail" class="text-gray-700 font-medium mb-1">Email:</label>
+                                    <input type="email" id="editEmail" value="john.doe@example.com" class="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                                </div>
+                                <button id="saveProfileButton" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105">
+                                    Save Profile
+                                </button>
+                                <div id="profileSaveMessage" class="mt-2 text-sm text-center text-green-700 font-medium hidden">Profile saved!</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Theme Settings -->
+                    <div class="border-b pb-6 border-gray-200">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-700">Display & Theme</h3>
+                        <div class="flex items-center justify-between">
+                            <label for="themeToggle" class="text-gray-700">Dark Mode:</label>
+                            <!-- Sliding Toggle Button HTML -->
+                            <label class="switch">
+                                <input type="checkbox" id="themeToggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">Toggle between light and dark themes (simulated).</p>
+                    </div>
+
+                    <!-- Notification Settings -->
+                    <div class="border-b pb-6 border-gray-200">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-700">Notifications</h3>
+                        <div class="flex flex-col space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label for="newUploadsNotify" class="text-gray-700">New Record Uploads:</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="newUploadsNotify" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label for="analysisCompleteNotify" class="text-gray-700">Analysis Complete:</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="analysisCompleteNotify">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Management -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-3 text-gray-700">Data Management</h3>
+                        <p class="text-gray-700 mb-4">Manage your stored medical records.</p>
+                        <button id="exportDataButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-md transition-all duration-300 ease-in-out transform hover:scale-105 mr-2">
+                            Export All Data (JSON)
+                        </button>
+                        <div id="dataMessage" class="mt-4 text-sm text-center text-green-700 font-medium hidden"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Analysis Modal -->
+    <div id="analysisModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full relative">
+            <button class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl" id="closeAnalysisModal">&times;</button>
+            <h3 class="text-2xl font-bold mb-4 text-gray-800">Record Analysis</h3>
+            <div id="analysisContent" class="bg-gray-50 p-4 rounded-lg border border-gray-300 text-gray-700 min-h-[100px] flex items-center justify-center text-left whitespace-pre-wrap">
+                <p class="text-gray-500">Analysis will appear here...</p>
+            </div>
+            <div id="analysisLoading" class="hidden mt-4 text-center text-blue-600 font-semibold">
+                Analyzing document...
+            </div>
+            <div id="analysisError" class="hidden mt-4 text-center text-red-600 font-semibold">
+                Error analyzing document. Please try again.
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Modal -->
+    <div id="summaryModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full relative">
+            <button class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl" id="closeSummaryModal">&times;</button>
+            <h3 class="text-2xl font-bold mb-4 text-gray-800">Record Summary ✨</h3>
+            <div id="summaryContent" class="bg-gray-50 p-4 rounded-lg border border-gray-300 text-gray-700 min-h-[100px] flex items-center justify-center text-left whitespace-pre-wrap">
+                <p class="text-gray-500">Summary will appear here...</p>
+            </div>
+            <div id="summaryLoading" class="hidden mt-4 text-center text-blue-600 font-semibold">
+                Generating summary...
+            </div>
+            <div id="summaryError" class="hidden mt-4 text-center text-red-600 font-semibold">
+                Error generating summary. Please try again.
+            </div>
+        </div>
+    </div>
+
+    <!-- Document View Modal -->
+    <div id="documentViewModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-4xl w-full relative h-[80vh] flex flex-col">
+            <button class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl" id="closeDocumentViewModal">&times;</button>
+            <h3 class="text-2xl font-bold mb-4 text-gray-800" id="documentViewTitle">Viewing Document: [Document Name]</h3>
+            
+            <div id="documentPreviewArea" class="flex-grow bg-gray-100 p-4 rounded-lg border border-gray-300 text-gray-700 overflow-auto mb-4 flex items-center justify-center">
+                <!-- Document content (image preview, PDF iframe, or message) will be rendered here -->
+                <p class="text-lg text-gray-500 text-center">Document preview will appear here.</p>
+            </div>
+
+            <div class="mt-2 text-sm text-gray-600">
+                <p><strong>Document Type:</strong> <span id="viewedDocumentType">N/A</span></p>
+                <p><strong>Category:</strong> <span id="viewedDocumentCategory">Uncategorized</span></p>
+            </div>
+
+            <!-- Download Original File Button -->
+            <div class="mt-4 text-center">
+                <a id="downloadOriginalButton" href="#" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-full shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105">
+                    Download Original File
+                </a>
+            </div>
+
+            <div class="mt-4">
+                <h4 class="text-lg font-semibold mb-2 text-gray-700">Digital Copy (OCR Text):</h4>
+                <pre class="whitespace-pre-wrap text-sm text-gray-700 bg-white p-3 rounded-md border border-gray-200 overflow-auto max-h-48" id="documentOcrText">No digital copy (OCR text) available for this document.</pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- The non-medical confirmation modal HTML has been removed -->
+
+
+    <!-- Footer Section -->
+    <footer class="bg-blue-700 text-white p-4 mt-8 shadow-inner">
+        <div class="container text-center text-sm">
+            &copy; 2024 Medical Records Manager. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        // Frontend JavaScript for Medical Records Manager
+
+        // --- Backend API Base URL ---
+        const API_BASE_URL = 'http://localhost:5000/api'; // IMPORTANT: Change this to your backend's deployed URL in production
+
+        // --- DOM Element References ---
+        // Helper to safely get element and log if not found
+        function getElementByIdSafe(id) {
+            const element = document.getElementById(id);
+            if (!element) {
+                console.error(`Error: Element with ID '${id}' not found in the DOM.`);
+            }
+            return element;
+        }
+
+        const fileInput = getElementByIdSafe('fileInput');
+        const selectedFileNameSpan = getElementByIdSafe('selectedFileName');
+        const uploadButton = getElementByIdSafe('uploadButton');
+        const uploadMessage = getElementByIdSafe('uploadMessage');
+        const uploadLoading = getElementByIdSafe('uploadLoading');
+        const recordsList = getElementByIdSafe('recordsList');
+        const noRecordsMessage = getElementByIdSafe('noRecordsMessage');
+        const searchBar = getElementByIdSafe('searchBar');
+        const clearSearchButton = getElementByIdSafe('clearSearchButton');
+        const categorySelect = getElementByIdSafe('categorySelect');
+
+        const totalFilesCountSpan = getElementByIdSafe('totalFilesCount');
+        const digitalCopiesCountSpan = getElementByIdSafe('digitalCopiesCount');
+
+        const homePage = getElementByIdSafe('homePage');
+        const recordsPage = getElementByIdSafe('recordsPage');
+        const digitalCopyPage = getElementByIdSafe('digitalCopyPage');
+        const settingsPage = getElementByIdSafe('settingsPage');
+
+        const navHome = getElementByIdSafe('navHome');
+        const navRecords = getElementByIdSafe('navRecords');
+        const navDigitalCopy = getElementByIdSafe('navDigitalCopy');
+        const navSettings = getElementByIdSafe('navSettings');
+
+        const profilePicture = getElementByIdSafe('profilePicture');
+        const profileName = getElementByIdSafe('profileName');
+        const profileEmail = getElementByIdSafe('profileEmail');
+        const editName = getElementByIdSafe('editName');
+        const editEmail = getElementByIdSafe('editEmail');
+        const saveProfileButton = getElementByIdSafe('saveProfileButton');
+        const profileSaveMessage = getElementByIdSafe('profileSaveMessage');
+
+        const themeToggle = getElementByIdSafe('themeToggle');
+        const newUploadsNotify = getElementByIdSafe('newUploadsNotify');
+        const analysisCompleteNotify = getElementByIdSafe('analysisCompleteNotify');
+        const exportDataButton = getElementByIdSafe('exportDataButton');
+        const dataMessage = getElementByIdSafe('dataMessage');
+
+        const digitalCopySearchBar = getElementByIdSafe('digitalCopySearchBar');
+        const clearDigitalCopySearchButton = getElementByIdSafe('clearDigitalCopySearchButton');
+        const digitalCopyList = getElementByIdSafe('digitalCopyList');
+        const noDigitalCopiesMessage = getElementByIdSafe('noDigitalCopiesMessage');
+
+        const analysisModal = getElementByIdSafe('analysisModal');
+        const closeAnalysisModal = getElementByIdSafe('closeAnalysisModal');
+        const analysisContent = getElementByIdSafe('analysisContent');
+        const analysisLoading = getElementByIdSafe('analysisLoading');
+        const analysisError = getElementByIdSafe('analysisError');
+
+        const summaryModal = getElementByIdSafe('summaryModal');
+        const closeSummaryModal = getElementByIdSafe('closeSummaryModal');
+        const summaryContent = getElementByIdSafe('summaryContent');
+        const summaryLoading = getElementByIdSafe('summaryLoading');
+        const summaryError = getElementByIdSafe('summaryError');
+
+        const documentViewModal = getElementByIdSafe('documentViewModal');
+        const closeDocumentViewModal = getElementByIdSafe('closeDocumentViewModal');
+        const documentViewTitle = getElementByIdSafe('documentViewTitle');
+        const documentPreviewArea = getElementByIdSafe('documentPreviewArea');
+        const downloadOriginalButton = getElementByIdSafe('downloadOriginalButton');
+        const documentOcrText = getElementByIdSafe('documentOcrText'); 
+        const viewedDocumentType = getElementByIdSafe('viewedDocumentType');
+        const viewedDocumentCategory = getElementByIdSafe('viewedDocumentCategory');
+
+        // The non-medical confirmation modal elements and logic have been removed from the HTML and JS.
+        // const nonMedicalConfirmModal = getElementByIdSafe('nonMedicalConfirmModal');
+        // const confirmAddNonMedical = getElementByIdSafe('confirmAddNonMedical');
+        // const cancelAddNonMedical = getElementByIdSafe('cancelAddNonMedical');
+
+        // --- Application State ---
+        let medicalRecords = [];
+        let userProfile = {
+            name: "John Doe",
+            email: "john.doe@example.com",
+            profilePic: "https://placehold.co/128x128/cbd5e1/475569?text=JD"
+        };
+        let appSettings = {
+            darkMode: false,
+            notifyNewUploads: true,
+            notifyAnalysisComplete: false
+        };
+
+        // pendingUploadFile is no longer needed as there's no confirmation modal
+        // let pendingUploadFile = null; 
+
+        // --- Firebase/User ID (Mock for now, would be from Firebase Auth) ---
+        const CURRENT_USER_ID = 'demoUser123';
+
+        // --- Local Storage Management (for quick UI updates, backend is source of truth) ---
+        function loadDataFromLocalStorage() {
+            const storedRecords = localStorage.getItem('medicalRecords');
+            if (storedRecords) {
+                medicalRecords = JSON.parse(storedRecords);
+            }
+            const storedProfile = localStorage.getItem('userProfile');
+            if (storedProfile) {
+                userProfile = JSON.parse(storedProfile);
+            }
+            const storedSettings = localStorage.getItem('appSettings');
+            if (storedSettings) {
+                appSettings = JSON.parse(storedSettings);
+            }
+        }
+
+        function saveRecordsToLocalStorage() {
+            localStorage.setItem('medicalRecords', JSON.stringify(medicalRecords));
+        }
+
+        function saveProfileToLocalStorage() {
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
+        }
+
+        function saveSettingsToLocalStorage() {
+            localStorage.setItem('appSettings', JSON.stringify(appSettings));
+        }
+
+        // --- Backend Communication Functions ---
+
+        // Function to fetch all records from the backend
+        async function fetchRecordsFromBackend() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/records?userId=${CURRENT_USER_ID}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                medicalRecords = data; // Update local array with data from backend
+                saveRecordsToLocalStorage(); // Persist to local storage for quick reload
+                renderRecords(searchBar.value);
+                updateRecordCounts();
+                if (!digitalCopyPage.classList.contains('hidden')) {
+                    renderDigitalCopies(digitalCopySearchBar.value);
+                }
+            } catch (error) {
+                console.error('Error fetching records from backend:', error);
+                showUploadMessage('Failed to load records from server. Please ensure backend is running.', 'text-red-700');
+            }
+        }
+
+        // Function to upload a file to the backend
+        async function uploadFileToBackend(file, category) { // Removed confirmNonMedical parameter
+            uploadLoading.classList.remove('hidden');
+            uploadMessage.classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('medicalFile', file);
+            formData.append('userId', CURRENT_USER_ID);
+            formData.append('category', category);
+            // Removed: formData.append('confirmNonMedical', confirmNonMedical);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                // Removed: if (response.status === 202) { ... } (no more non-medical confirmation)
+
+                if (!response.ok) {
+                    throw new Error(result.error || `HTTP error! status: ${response.status}`);
+                }
+
+                // If successful, add the new record to our local array and re-render
+                medicalRecords.push(result.record);
+                saveRecordsToLocalStorage();
+                renderRecords(searchBar.value);
+                updateRecordCounts();
+                if (!digitalCopyPage.classList.contains('hidden')) {
+                    renderDigitalCopies(digitalCopySearchBar.value);
+                }
+
+                showUploadMessage('Record uploaded and processed successfully!', 'text-green-700');
+                fileInput.value = ''; // Clear input
+                selectedFileNameSpan.textContent = 'No files chosen';
+                categorySelect.value = 'Uncategorized';
+
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                showUploadMessage(`Upload failed: ${error.message}. Check backend console for details.`, 'text-red-700');
+            } finally {
+                uploadLoading.classList.add('hidden');
+            }
+        }
+
+        // Function to delete a record on the backend
+        async function deleteRecordFromBackend(recordId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/records/${recordId}?userId=${CURRENT_USER_ID}`, {
+                    method: 'DELETE',
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                // Update local data after successful deletion
+                medicalRecords = medicalRecords.filter(record => record.id !== recordId);
+                saveRecordsToLocalStorage();
+                renderRecords(searchBar.value);
+                updateRecordCounts();
+                if (!digitalCopyPage.classList.contains('hidden')) {
+                    renderDigitalCopies(digitalCopySearchBar.value);
+                }
+                showUploadMessage('Record deleted successfully!', 'text-red-700');
+            } catch (error) {
+                console.error('Error deleting record:', error);
+                showUploadMessage('Failed to delete record.', 'text-red-700');
+            }
+        }
+
+        // --- UI Rendering Functions ---
+
+        function updateRecordCounts() {
+            if (totalFilesCountSpan) totalFilesCountSpan.textContent = medicalRecords.length;
+            if (digitalCopiesCountSpan) digitalCopiesCountSpan.textContent = medicalRecords.length;
+        }
+
+        function renderRecords(filterText = '') {
+            if (!recordsList) {
+                console.error("Error: 'recordsList' element not found. Cannot render records.");
+                return;
+            }
+            recordsList.innerHTML = '';
+
+            const filteredRecords = medicalRecords.filter(record =>
+                record.name.toLowerCase().includes(filterText.toLowerCase())
+            );
+
+            if (filteredRecords.length === 0) {
+                if (noRecordsMessage) {
+                    noRecordsMessage.classList.remove('hidden');
+                    recordsList.appendChild(noRecordsMessage);
+                }
+            } else {
+                if (noRecordsMessage) noRecordsMessage.classList.add('hidden');
+
+                const recordsByCategory = filteredRecords.reduce((acc, record) => {
+                    const category = record.category || 'Uncategorized';
+                    if (!acc[category]) {
+                        acc[category] = [];
+                    }
+                    acc[category].push(record);
+                    return acc;
+                }, {});
+
+                const sortedCategories = Object.keys(recordsByCategory).sort();
+
+                sortedCategories.forEach(category => {
+                    const categorySection = document.createElement('div');
+                    categorySection.className = 'mb-6';
+                    categorySection.innerHTML = `
+                        <h3 class="text-xl font-semibold mb-3 text-gray-700 border-b-2 border-blue-200 pb-1">${category} (${recordsByCategory[category].length})</h3>
+                        <div class="space-y-4"></div>
+                    `;
+                    const categoryRecordsContainer = categorySection.querySelector('div.space-y-4');
+
+                    recordsByCategory[category].forEach(record => {
+                        const recordCard = document.createElement('div');
+                        recordCard.id = `record-${record.id}`;
+                        recordCard.className = 'bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0';
+                        recordCard.innerHTML = `
+                            <div class="flex-grow">
+                                <p class="text-lg font-medium text-gray-800">${record.name}</p>
+                                <p class="text-sm text-gray-500">Uploaded: ${new Date(record.uploadDate).toLocaleDateString()}</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button data-id="${record.id}" class="view-record-btn bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-semibold py-2 px-4 rounded-full transition-colors">View</button>
+                                <button data-id="${record.id}" class="analyze-record-btn bg-yellow-100 hover:bg-yellow-200 text-yellow-800 text-sm font-semibold py-2 px-4 rounded-full transition-colors">Analyze</button>
+                                <button data-id="${record.id}" class="delete-record-btn bg-red-100 hover:bg-red-200 text-red-800 text-sm font-semibold py-2 px-4 rounded-full transition-colors">Delete</button>
+                            </div>
+                        `;
+                        categoryRecordsContainer.appendChild(recordCard);
+                    });
+                    recordsList.appendChild(categorySection);
+                });
+            }
+            addRecordEventListeners();
+        }
+
+        function addRecordEventListeners() {
+            document.querySelectorAll('.view-record-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const recordId = e.target.dataset.id;
+                    const record = medicalRecords.find(r => r.id === recordId);
+                    if (record) {
+                        if (documentViewTitle) documentViewTitle.textContent = `Viewing Document: ${record.name}`;
+                        
+                        // Clear previous preview content
+                        if (documentPreviewArea) documentPreviewArea.innerHTML = '';
+
+                        // Display document preview based on type
+                        if (record.downloadUrl) {
+                            if (record.type && record.type.startsWith('image/')) {
+                                const img = document.createElement('img');
+                                img.src = record.downloadUrl; // Use the signed URL directly for image preview
+                                img.alt = `Document preview for ${record.name}`;
+                                img.className = 'max-w-full max-h-full object-contain rounded-md shadow-md';
+                                if (documentPreviewArea) documentPreviewArea.appendChild(img);
+                            } else if (record.type === 'application/pdf') {
+                                const iframe = document.createElement('iframe');
+                                iframe.src = record.downloadUrl; // Embed PDF directly
+                                iframe.className = 'w-full h-full border-none rounded-md shadow-md';
+                                iframe.title = `PDF Preview: ${record.name}`;
+                                if (documentPreviewArea) documentPreviewArea.appendChild(iframe);
+                            } else if (record.type.includes('wordprocessingml') || record.type === 'application/msword') {
+                                if (documentPreviewArea) documentPreviewArea.innerHTML = `<p class="text-gray-700 text-center text-lg">
+                                    Visual preview for ${record.type.split('/').pop().toUpperCase()} files is not available.
+                                    Please click "Download Original File" to view.
+                                </p>`;
+                            } else {
+                                if (documentPreviewArea) documentPreviewArea.innerHTML = `<p class="text-gray-500 text-center">No visual preview available for this document type.</p>`;
+                            }
+                        } else {
+                            if (documentPreviewArea) documentPreviewArea.innerHTML = `<p class="text-gray-500 text-center">No download URL available for preview. Please try re-uploading.</p>`;
+                        }
+
+                        // Set the download link for the original file
+                        if (downloadOriginalButton) {
+                            if (record.downloadUrl) {
+                                downloadOriginalButton.href = record.downloadUrl;
+                                downloadOriginalButton.style.display = 'inline-block'; // Show the button
+                                downloadOriginalButton.download = record.name; // Suggest original filename
+                            } else {
+                                downloadOriginalButton.href = '#';
+                                downloadOriginalButton.style.display = 'none'; // Hide if no URL
+                            }
+                        }
+
+                        // Update the OCR text content
+                        if (documentOcrText) {
+                            documentOcrText.textContent = record.ocrText || 'No digital copy (OCR text) available for this document.';
+                        }
+
+                        // Update document type and category
+                        if (viewedDocumentType) viewedDocumentType.textContent = record.type || 'N/A';
+                        if (viewedDocumentCategory) viewedDocumentCategory.textContent = record.category || 'Uncategorized';
+                        
+                        // --- DEBUGGING AID ---
+                        console.log('Viewing Record:', record.name);
+                        console.log('Record Type:', record.type);
+                        console.log('OCR Text for viewing:', record.ocrText);
+                        console.log('Download URL:', record.downloadUrl);
+                        // --- END DEBUGGING AID ---
+
+                        if (documentViewModal) documentViewModal.classList.remove('hidden');
+                    }
+                };
+            });
+
+            document.querySelectorAll('.analyze-record-btn').forEach(button => {
+                button.onclick = async (e) => {
+                    const recordId = e.target.dataset.id;
+                    const record = medicalRecords.find(r => r.id === recordId);
+                    if (record && record.analysisResult) { // Use pre-computed analysisResult
+                        if (analysisModal) analysisModal.classList.remove('hidden');
+                        if (analysisContent) analysisContent.innerHTML = `<p>${record.analysisResult}</p>`; // Display pre-computed
+                        if (analysisLoading) analysisLoading.classList.add('hidden'); // Hide loading
+                        if (analysisError) analysisError.classList.add('hidden'); // Hide error
+                    } else {
+                        if (analysisModal) analysisModal.classList.remove('hidden');
+                        if (analysisContent) analysisContent.innerHTML = '<p class="text-red-500">No analysis available for this document. Try re-uploading or check backend logs.</p>';
+                        if (analysisLoading) analysisLoading.classList.add('hidden');
+                        if (analysisError) analysisError.classList.remove('hidden');
+                    }
+                };
+            });
+
+            document.querySelectorAll('.delete-record-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const recordId = e.target.dataset.id;
+                    showCustomConfirm('Are you sure you want to delete this record?', () => {
+                        deleteRecordFromBackend(recordId);
+                    });
+                };
+            });
+        }
+
+        function renderDigitalCopies(filterText = '') {
+            if (!digitalCopyList) {
+                console.error("Error: 'digitalCopyList' element not found. Cannot render digital copies.");
+                return;
+            }
+            digitalCopyList.innerHTML = '';
+
+            const filteredRecords = medicalRecords.filter(record =>
+                record.name.toLowerCase().includes(filterText.toLowerCase()) ||
+                (record.ocrText && record.ocrText.toLowerCase().includes(filterText.toLowerCase()))
+            );
+
+            if (filteredRecords.length === 0) {
+                if (noDigitalCopiesMessage) {
+                    noDigitalCopiesMessage.classList.remove('hidden');
+                    digitalCopyList.appendChild(noDigitalCopiesMessage);
+                }
+            } else {
+                if (noDigitalCopiesMessage) noDigitalCopiesMessage.classList.add('hidden');
+                filteredRecords.forEach(record => {
+                    const digitalCopyCard = document.createElement('div');
+                    digitalCopyCard.className = 'bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200';
+                    digitalCopyCard.innerHTML = `
+                        <h3 class="text-lg font-medium text-gray-800 mb-2">${record.name} (Category: ${record.category || 'Uncategorized'})</h3>
+                        <pre class="whitespace-pre-wrap text-sm text-gray-700 bg-white p-3 rounded-md border border-gray-200 overflow-auto max-h-48">${record.ocrText || 'No digital copy available.'}</pre>
+                        <div class="flex flex-wrap gap-2 mt-3">
+                            <button data-id="${record.id}" class="copy-digital-copy-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-md transition-all duration-300 ease-in-out">
+                                Copy Text
+                            </button>
+                            <button data-id="${record.id}" class="summarize-record-btn bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-full shadow-md transition-all duration-300 ease-in-out">
+                                ✨ Summarize
+                            </button>
+                        </div>
+                        <div class="copy-message mt-2 text-sm text-green-700 font-medium hidden">Text copied to clipboard!</div>
+                    `;
+                    digitalCopyList.appendChild(digitalCopyCard);
+                });
+            }
+            addDigitalCopyEventListenersForPage();
+        }
+
+        function addDigitalCopyEventListenersForPage() {
+            document.querySelectorAll('.copy-digital-copy-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const ocrTextElement = e.target.closest('.bg-gray-50').querySelector('pre');
+                    if (ocrTextElement) {
+                        const textToCopy = ocrTextElement.textContent;
+                        const tempTextArea = document.createElement('textarea');
+                        tempTextArea.value = textToCopy;
+                        document.body.appendChild(tempTextArea);
+                        tempTextArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(tempTextArea);
+
+                        const copyMsgElement = e.target.closest('.flex').nextElementSibling;
+                        if (copyMsgElement) {
+                            copyMsgElement.classList.remove('hidden');
+                            setTimeout(() => {
+                                copyMsgElement.classList.add('hidden');
+                            }, 2000);
+                        }
+                    }
+                };
+            });
+
+            document.querySelectorAll('.summarize-record-btn').forEach(button => {
+                button.onclick = async (e) => {
+                    const recordId = e.target.dataset.id;
+                    const record = medicalRecords.find(r => r.id === recordId);
+                    if (record && record.summaryResult) { // Use pre-computed summaryResult
+                        if (summaryModal) summaryModal.classList.remove('hidden');
+                        if (summaryContent) summaryContent.innerHTML = `<p>${record.summaryResult}</p>`; // Display pre-computed
+                        if (summaryLoading) summaryLoading.classList.add('hidden'); // Hide loading
+                        if (summaryError) summaryError.classList.add('hidden'); // Hide error
+                    } else {
+                        if (summaryModal) summaryModal.classList.remove('hidden');
+                        if (summaryContent) summaryContent.innerHTML = '<p class="text-red-500">No summary available for this document. Try re-uploading or check backend logs.</p>';
+                        if (summaryLoading) summaryLoading.classList.add('hidden');
+                        if (summaryError) summaryError.classList.remove('hidden');
+                    }
+                };
+            });
+        }
+
+        // --- Event Listeners ---
+
+        if (fileInput) fileInput.addEventListener('change', (event) => {
+            if (event.target.files.length > 0) {
+                const files = Array.from(event.target.files);
+                if (files.length === 1) {
+                    if (selectedFileNameSpan) selectedFileNameSpan.textContent = files[0].name;
+                } else {
+                    if (selectedFileNameSpan) selectedFileNameSpan.textContent = `${files.length} files selected`;
+                }
+            } else {
+                if (selectedFileNameSpan) selectedFileNameSpan.textContent = 'No files chosen';
+            }
+        });
+
+        if (uploadButton) uploadButton.addEventListener('click', () => {
+            const files = fileInput.files;
+            if (files.length === 0) {
+                showUploadMessage('Please select a file to upload.', 'text-red-700');
+                return;
+            }
+            // For simplicity, we'll only upload the first selected file
+            uploadFileToBackend(files[0], categorySelect.value);
+        });
+
+        // The non-medical confirmation modal handlers have been removed.
+        // if (confirmAddNonMedical) confirmAddNonMedical.addEventListener('click', () => { ... });
+        // if (cancelAddNonMedical) cancelAddNonMedical.addEventListener('click', () => { ... });
+
+
+        if (searchBar) searchBar.addEventListener('input', (event) => {
+            renderRecords(event.target.value);
+        });
+
+        if (clearSearchButton) clearSearchButton.addEventListener('click', () => {
+            if (searchBar) searchBar.value = '';
+            renderRecords('');
+        });
+
+        if (digitalCopySearchBar) digitalCopySearchBar.addEventListener('input', (event) => {
+            renderDigitalCopies(event.target.value);
+        });
+
+        if (clearDigitalCopySearchButton) clearDigitalCopySearchButton.addEventListener('click', () => {
+            if (digitalCopySearchBar) digitalCopySearchBar.value = '';
+            renderDigitalCopies('');
+        });
+
+        if (closeAnalysisModal) closeAnalysisModal.addEventListener('click', () => {
+            if (analysisModal) analysisModal.classList.add('hidden');
+        });
+
+        if (closeSummaryModal) closeSummaryModal.addEventListener('click', () => {
+            if (summaryModal) summaryModal.classList.add('hidden');
+        });
+
+        if (closeDocumentViewModal) closeDocumentViewModal.addEventListener('click', () => {
+            if (documentViewModal) documentViewModal.classList.add('hidden');
+        });
+
+        if (saveProfileButton) saveProfileButton.addEventListener('click', () => {
+            if (editName && editEmail) { // Ensure elements exist before accessing .value
+                userProfile.name = editName.value;
+                userProfile.email = editEmail.value;
+                saveProfileToLocalStorage();
+                renderProfileSection();
+                if (profileSaveMessage) {
+                    profileSaveMessage.classList.remove('hidden');
+                    profileSaveMessage.textContent = 'Profile saved successfully!';
+                    profileSaveMessage.classList.add('text-green-700');
+                    setTimeout(() => {
+                        profileSaveMessage.classList.add('hidden');
+                    }, 3000);
+                }
+            } else {
+                console.error("Cannot save profile: editName or editEmail elements not found.");
+            }
+        });
+
+        if (themeToggle) themeToggle.addEventListener('change', () => {
+            appSettings.darkMode = themeToggle.checked;
+            saveSettingsToLocalStorage();
+            renderSettings();
+        });
+
+        if (newUploadsNotify) newUploadsNotify.addEventListener('change', () => {
+            appSettings.notifyNewUploads = newUploadsNotify.checked;
+            saveSettingsToLocalStorage();
+            showDataMessage('Notification preference updated!', 'text-green-700');
+        });
+
+        if (analysisCompleteNotify) analysisCompleteNotify.addEventListener('change', () => {
+            appSettings.notifyAnalysisComplete = analysisCompleteNotify.checked;
+            saveSettingsToLocalStorage();
+            showDataMessage('Notification preference updated!', 'text-green-700');
+        });
+
+        if (exportDataButton) exportDataButton.addEventListener('click', () => {
+            const dataToExport = {
+                medicalRecords: medicalRecords,
+                userProfile: userProfile,
+                appSettings: appSettings
+            };
+            const dataStr = JSON.stringify(dataToExport, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'medical_records_data.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showDataMessage('Data exported successfully!', 'text-green-700');
+        });
+
+        // --- Utility Functions ---
+        function showUploadMessage(message, colorClass) {
+            if (uploadMessage) {
+                uploadMessage.textContent = message;
+                uploadMessage.className = `mt-4 text-sm text-center font-medium ${colorClass}`;
+                uploadMessage.classList.remove('hidden');
+                setTimeout(() => {
+                    uploadMessage.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        function showDataMessage(message, colorClass) {
+            if (dataMessage) {
+                dataMessage.textContent = message;
+                dataMessage.className = `mt-4 text-sm text-center font-medium ${colorClass}`;
+                dataMessage.classList.remove('hidden');
+                setTimeout(() => {
+                    dataMessage.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        function showCustomConfirm(message, onConfirm) {
+            const confirmModal = document.createElement('div');
+            confirmModal.className = 'fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50';
+            confirmModal.innerHTML = `
+                <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full relative text-center">
+                    <p class="text-xl font-semibold mb-6 text-gray-800">${message}</p>
+                    <div class="flex justify-center space-x-4">
+                        <button id="confirmYes" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-5 rounded-full shadow-md transition-all duration-300 ease-in-out">Yes</button>
+                        <button id="confirmNo" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-5 rounded-full shadow-md transition-all duration-300 ease-in-out">No</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmModal);
+
+            const confirmYesButton = document.getElementById('confirmYes');
+            const confirmNoButton = document.getElementById('confirmNo');
+
+            if (confirmYesButton) confirmYesButton.onclick = () => {
+                onConfirm();
+                document.body.removeChild(confirmModal);
+            };
+
+            if (confirmNoButton) confirmNoNoButton.onclick = () => {
+                document.body.removeChild(confirmModal);
+            };
+        }
+
+        // --- Profile and Settings Rendering ---
+        function renderProfileSection() {
+            if (profileName) profileName.textContent = userProfile.name;
+            if (profileEmail) profileEmail.textContent = userProfile.email;
+            if (editName) editName.value = userProfile.name;
+            if (editEmail) editEmail.value = userProfile.email; 
+            if (profilePicture) profilePicture.src = userProfile.profilePic;
+        }
+
+        function renderSettings() {
+            renderProfileSection();
+
+            if (themeToggle) themeToggle.checked = appSettings.darkMode;
+            if (newUploadsNotify) newUploadsNotify.checked = appSettings.notifyNewUploads;
+            if (analysisCompleteNotify) analysisCompleteNotify.checked = appSettings.notifyAnalysisComplete;
+
+            if (appSettings.darkMode) {
+                document.body.classList.add('bg-gray-900');
+                document.body.classList.remove('bg-gray-100');
+            } else {
+                document.body.classList.remove('bg-gray-900');
+                document.body.classList.add('bg-gray-100');
+            }
+        }
+
+        // --- Page Navigation Logic ---
+        function showPage(pageId) {
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.add('hidden');
+            });
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) targetPage.classList.remove('hidden');
+
+            document.querySelectorAll('nav ul li a').forEach(link => {
+                link.classList.remove('font-semibold');
+            });
+
+            if (pageId === 'homePage') {
+                if (navHome) navHome.classList.add('font-semibold');
+            } else if (pageId === 'recordsPage') {
+                if (navRecords) navRecords.classList.add('font-semibold');
+                renderRecords(searchBar ? searchBar.value : '');
+                updateRecordCounts();
+            } else if (pageId === 'digitalCopyPage') {
+                if (navDigitalCopy) navDigitalCopy.classList.add('font-semibold');
+                renderDigitalCopies(digitalCopySearchBar ? digitalCopySearchBar.value : '');
+            } else if (pageId === 'settingsPage') {
+                if (navSettings) navSettings.classList.add('font-semibold');
+                renderSettings();
+            }
+        }
+
+        if (navHome) navHome.addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('homePage');
+        });
+
+        if (navRecords) navRecords.addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('recordsPage');
+        });
+
+        if (navDigitalCopy) navDigitalCopy.addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('digitalCopyPage');
+        });
+
+        if (navSettings) navSettings.addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('settingsPage');
+        });
+
+        // --- Initialization ---
+        window.onload = async () => {
+            loadDataFromLocalStorage(); // Load initial data from local storage
+            await fetchRecordsFromBackend(); // Attempt to sync with backend
+            showPage('homePage');
+        };
+    </script>
+</body>
+</html>
